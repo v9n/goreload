@@ -20,7 +20,6 @@ import (
   "os/exec"
   "math/rand"
   "time"
-  "bytes"
 )
 
 const CHANGE_LOG = "goreload.log.v01"
@@ -67,18 +66,23 @@ func main() {
     log.Print(content)
     ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(content), 0777)    
   } else {
+    
     //Ok, so 
     //fswatch ~/Sites/goreload "goreload -n $RANDOM"
     // Watch the change
-    path, _ := os.Getwd()
-    watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
-    // watchCmd.Stdin = strings.NewReader("some input")
-    var out bytes.Buffer
-    watchCmd.Stdout = &out
-    err := watchCmd.Run()
-    if err != nil {
-      log.Fatal(err)
-    }
+    c1 := make(chan bool)
+    go func() {
+      path, _ := os.Getwd()
+      watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+      err := watchCmd.Run()
+      //out, err := cmd.Output()
+      if err != nil {
+          log.Fatal(err)
+          return
+      }  
+      c1 <- true
+    }()
+    
 
     f := func(d string, info os.FileInfo, err error) error {
       if err != nil {

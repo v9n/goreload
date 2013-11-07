@@ -12,3 +12,9 @@ Go Reload doesn't do preprocessing. Meaning u must handle SASS, Coffee, LESS yor
 4. Edit the file and see browser auto reload
 
 5. Watch our video
+
+How it works
+============
+
+It utilize https://github.com/alandipert/fswatch
+Whenever you made change, the change is write to a tmp file. Then go server count the number of the lines. And instruct your page to reload if it has ever changed.
