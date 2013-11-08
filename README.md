@@ -18,7 +18,7 @@ Go Reload doesn't do preprocessing. Meaning u must handle SASS, Coffee, LESS yor
 
 4. Edit the file and see browser auto reload
 
-5. Watch our video
+5. Watch our video: http://youtu.be/OmbNpV4c6vs
 
 How it works
 ============
