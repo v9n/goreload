@@ -8,7 +8,7 @@ package main
 
 import (
   "log"
-  // "github.com/howeyc/fsnotify"
+  "github.com/howeyc/fsnotify"
   "flag"
   "fmt"
   "net/http"
@@ -17,7 +17,7 @@ import (
   "github.com/drone/routes"
   "path/filepath"
   "io/ioutil"
-  "os/exec"
+  // "os/exec"
   "math/rand"
   "time"
 )
@@ -32,16 +32,27 @@ func Whoami(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "Hey, %s %s. Let include <script> tag to do live reload :-)", firstName, lastName)
 }
 
+func BroadcastChange(ev *fsnotify.FileEvent) {
+  log.Println("event:", ev)
+  // log.Fatal("We got new chance")
+  //contents,_ := ioutil.ReadFile("plikTekstowy.txt")
+  rand.Seed(time.Now().Unix())
+  content := fmt.Sprintf("%v", rand.Int())
+  log.Print(content)
+  ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(content), 0777)      
+}
+
 func main() {
   os.Mkdir("tmp", 0777)
-
   // Open a channel for signal processing
   c := make(chan os.Signal, 1)
   signal.Notify(c, os.Interrupt, os.Kill)
   go func() {
   for sig := range c {
     fmt.Println("Signal received:", sig)
-    //Clearn up 
+    //Clean up 
+    fmt.Println("Cleaning up...")
+    os.Remove("/tmp/" + CHANGE_LOG)
     fmt.Println("Exiting...")
     os.Exit(0)
     }
@@ -65,51 +76,73 @@ func main() {
     content := fmt.Sprintf("%v", rand.Int())
     log.Print(content)
     ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(content), 0777)    
-  } else {
+    os.Exit(0)  
+  }
     
+  watcher, err := fsnotify.NewWatcher()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  done := make(chan bool)
+  // Process events
+  go func() {
+    for {
+      select {
+        case ev := <-watcher.Event:
+          BroadcastChange(ev)
+        case err := <-watcher.Error:
+          log.Println("error:", err)
+        }
+    }
+  }()
+
+  f := func(d string, info os.FileInfo, err error) error {
+    if err != nil {
+      return err
+    }
+    if !info.IsDir() {
+      return nil
+    }
+
+    fmt.Println(fmt.Sprintf("Watch: %s", d))
+    err = watcher.Watch(d)
+    if err != nil {
+      log.Fatal(err)
+    }  
+    return nil
+  }
+  filepath.Walk(*argPath, f)
+
+  // <-done
+
     //Ok, so 
     //fswatch ~/Sites/goreload "goreload -n $RANDOM"
     // Watch the change
-    c1 := make(chan bool)
-    go func() {
-      path, _ := os.Getwd()
-      watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
-      err := watchCmd.Run()
-      //out, err := cmd.Output()
-      if err != nil {
-          log.Fatal(err)
-          return
-      }  
-      c1 <- true
-    }()
-    
+    // go func() {
+    //   c1 := make(chan bool)
+    //   path, _ := os.Getwd()
+    //   watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+    //   //watchCmd := exec.Command("ls", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+    //   err := watchCmd.Run()
+    //   //out, err := watchCmd.Output()
+    //   // log.Println(out)
+    //   if err != nil {
+    //       log.Fatal(err)
+    //       return
+    //   }  
+    //   <- c1
+    // }()
 
-    f := func(d string, info os.FileInfo, err error) error {
-      if err != nil {
-        return err
-      }
-      fmt.Println(d)
-      return nil
-    }
-    filepath.Walk(".", f)
+  // Give the user some kind of feedback
+  fmt.Println(fmt.Sprintf("Starting static file server at %s on port %v", *argPath, *argPort))
 
-    // Give the user some kind of feedback
-    fmt.Println(fmt.Sprintf("Starting static file server at %s on port %v", *argPath, *argPort))
+  mux := routes.New()
+  pwd, _ := os.Getwd()
+  mux.Static("/asset", pwd)
+  mux.Get("/hello/:last/:first", Whoami)
 
-    // Start the server on argPort, using FileServer at argPath as the handler
-    // assetPath := "./assets"
-    
-    // err := http.ListenAndServe(fmt.Sprintf(":%v", *argPort), http.FileServer(http.Dir(assetPath)))
-    // if err != nil {
-    //   fmt.Println("Error running web server for static assets:", err)
-    // }
-
-    mux := routes.New()
-    pwd, _ := os.Getwd()
-    mux.Static("/asset", pwd)
-    mux.Get("/hello/:last/:first", Whoami)
-
-    Reload := func (w http.ResponseWriter, r *http.Request) {
+  Reload := func (w http.ResponseWriter, r *http.Request) {
           params := r.URL.Query()
           lastChange := params.Get(":last_change")
           js := `(function () {
@@ -143,14 +176,14 @@ func main() {
             js = `(function () {window.location.reload(true)})()`
             fmt.Fprintf(w, js)
           }
-    }
-
-    mux.Get("/reload", Reload)
-    mux.Get("/reload/:last_change", Reload)
-
-    http.Handle("/", mux)
-    fmt.Println(fmt.Sprintf("Include this code in your app:\n <script src=\"http://127.0.0.1:%v/reload\"></script>", *argPort))
-    http.ListenAndServe(fmt.Sprintf(":%v", *argPort), nil)    
   }
 
+  mux.Get("/reload", Reload)
+  mux.Get("/reload/:last_change", Reload)
+
+  http.Handle("/", mux)
+  fmt.Println(fmt.Sprintf("Include this code in your app:\n <script src=\"http://127.0.0.1:%v/reload\"></script>", *argPort))
+  http.ListenAndServe(fmt.Sprintf(":%v", *argPort), nil)    
+  <- done
+  watcher.Close()
 }
