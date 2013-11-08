@@ -5,7 +5,14 @@ Go Reload doesn't do preprocessing. Meaning u must handle SASS, Coffee, LESS yor
 
 1. Clone this repo
 
-2. ./goreload -p 8080 -d /path/to/project/folder/to/look should be something in public or folder contain your sass, 
+2. Run `goreload`
+
+```
+./goreload -p port_to_run_go_reload_on_default_51203 -d /path/to/project/folder/to/look 
+
+```
+* -p The port to run on, should > 1024 to run without admin perm.
+* -d The directory to watch for the changes. 
 
 3. Include script tag: http://127.0.0.1:8080/goreload.js
 
@@ -16,5 +23,5 @@ Go Reload doesn't do preprocessing. Meaning u must handle SASS, Coffee, LESS yor
 How it works
 ============
 
-It utilize https://github.com/alandipert/fswatch
-Whenever you made change, the change is write to a tmp file. Then go server count the number of the lines. And instruct your page to reload if it has ever changed.
+It utilize ~~https://github.com/alandipert/fswatch~~ https://github.com/howeyc/fsnotify/
+Whenever you makes a change to any files inside the directory `goreload` watched, goreload notices the timestamp for that change, store it and refresh the page.
