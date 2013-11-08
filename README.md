@@ -8,7 +8,7 @@ Go Reload doesn't do preprocessing. Meaning u must handle SASS, Coffee, LESS yor
 2. Run `goreload`
 
 ```
-./goreload -p port_to_run_go_reload_on_default_51203 -d /path/to/project/folder/to/look 
+./goreload -p port_to_run_go_reload_on_default_51203 -d /path/to/project/folder/to/look
 
 ```
 * -p The port to run on, should > 1024 to run without admin perm.

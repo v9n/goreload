@@ -20,10 +20,13 @@ import (
   // "os/exec"
   "math/rand"
   "time"
+  "strings"
 )
 
-const CHANGE_LOG = "goreload.log.v01"
-const DEFAULT_PORT = 51203
+const (
+  CHANGE_LOG = "goreload.log.v01"
+  DEFAULT_PORT = 51203
+)
 
 func Whoami(w http.ResponseWriter, r *http.Request) {
   params := r.URL.Query()
@@ -101,7 +104,7 @@ func main() {
     if err != nil {
       return err
     }
-    if !info.IsDir() {
+    if !info.IsDir() || strings.Contains(d, ".git") || strings.Contains(d, ".svn") {
       return nil
     }
 
@@ -112,6 +115,7 @@ func main() {
     }  
     return nil
   }
+  
   filepath.Walk(*argPath, f)
 
   // <-done
