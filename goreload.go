@@ -16,11 +16,13 @@ import (
   "os/signal"
   "github.com/drone/routes"
   "path/filepath"
+  "io"
   "io/ioutil"
   // "os/exec"
   "math/rand"
   "time"
   "strings"
+  "crypto/md5"
 )
 
 const (
@@ -37,12 +39,17 @@ func Whoami(w http.ResponseWriter, r *http.Request) {
 
 func BroadcastChange(ev *fsnotify.FileEvent) {
   log.Println("event:", ev)
-  // log.Fatal("We got new chance")
-  //contents,_ := ioutil.ReadFile("plikTekstowy.txt")
-  rand.Seed(time.Now().Unix())
-  content := fmt.Sprintf("%v", rand.Int())
-  log.Print(content)
-  ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(content), 0777)      
+  contents,_ := ioutil.ReadFile(ev.Name)
+  
+  h := md5.New()
+  io.WriteString(h, string(contents))
+  // io.Writ
+  hash := h.Sum(nil)
+  fmt.Printf("%x", h.Sum(nil))
+  log.Print(hash)
+  ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(fmt.Sprintf("%x", h.Sum(nil))), 0777)      
+  //rand.Seed(time.Now().Unix())
+  // content := fmt.Sprintf("%v", rand.Int())
 }
 
 func main() {
@@ -111,11 +118,11 @@ func main() {
     fmt.Println(fmt.Sprintf("Watch: %s", d))
     err = watcher.Watch(d)
     if err != nil {
-      log.Fatal(err)
+      log.Println(err)
     }  
     return nil
   }
-  
+
   filepath.Walk(*argPath, f)
 
   // <-done
@@ -182,7 +189,8 @@ func main() {
           }
   }
 
-  mux.Get("/reload", Reload)
+  mux.Get("/reload" , Reload)
+  mux.Get("/reload/" , Reload)
   mux.Get("/reload/:last_change", Reload)
 
   http.Handle("/", mux)
