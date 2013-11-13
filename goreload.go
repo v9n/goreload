@@ -48,8 +48,34 @@ func BroadcastChange(ev *fsnotify.FileEvent) {
   fmt.Printf("%x", h.Sum(nil))
   log.Print(hash)
   ioutil.WriteFile("/tmp/" + CHANGE_LOG, []byte(fmt.Sprintf("%x", h.Sum(nil))), 0777)      
+
+  //So, we check if the file is coffee, less or sass, the build it
+  compile(ev.Name)
   //rand.Seed(time.Now().Unix())
   // content := fmt.Sprintf("%v", rand.Int())
+}
+
+func compile(file string) {
+    // <-done
+
+    //Ok, so 
+    //fswatch ~/Sites/goreload "goreload -n $RANDOM"
+    // Watch the change
+    // go func() {
+    //   c1 := make(chan bool)
+    //   path, _ := os.Getwd()
+    //   watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+    //   //watchCmd := exec.Command("ls", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+    //   err := watchCmd.Run()
+    //   //out, err := watchCmd.Output()
+    //   // log.Println(out)
+    //   if err != nil {
+    //       log.Fatal(err)
+    //       return
+    //   }  
+    //   <- c1
+    // }()
+
 }
 
 func main() {
@@ -125,25 +151,7 @@ func main() {
 
   filepath.Walk(*argPath, f)
 
-  // <-done
 
-    //Ok, so 
-    //fswatch ~/Sites/goreload "goreload -n $RANDOM"
-    // Watch the change
-    // go func() {
-    //   c1 := make(chan bool)
-    //   path, _ := os.Getwd()
-    //   watchCmd := exec.Command(path + "/fswatch", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
-    //   //watchCmd := exec.Command("ls", "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
-    //   err := watchCmd.Run()
-    //   //out, err := watchCmd.Output()
-    //   // log.Println(out)
-    //   if err != nil {
-    //       log.Fatal(err)
-    //       return
-    //   }  
-    //   <- c1
-    // }()
 
   // Give the user some kind of feedback
   fmt.Println(fmt.Sprintf("Starting static file server at %s on port %v", *argPath, *argPort))
