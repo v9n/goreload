@@ -18,7 +18,7 @@ import (
   "path/filepath"
   "io"
   "io/ioutil"
-  // "os/exec"
+  "os/exec"
   "math/rand"
   "time"
   "strings"
@@ -56,9 +56,24 @@ func BroadcastChange(ev *fsnotify.FileEvent) {
 }
 
 func compile(file string) {
-    // <-done
+  cmd := ""
+  compiler := ""
+  if string.HasSuffix(file, '.coffee') {
+    compiler = 'coffee -c'
+    cmd = compiler + " " + file
+  }
+  if string.HasSuffix(file, '.less') {
+    compiler = 'lessc'
+    cmd = compiler + " " + file + " " + string.Replace(file, '.less', '.css')
+  }
+  if string.HasSuffix(file, '.sass') {
+    compiler = "sassc"
+    cmd = compiler + " " + file + " " + string.Replace(file, '.sass', '.css')
+  }
+  watchCmd := exec.Command(compiler, "~/Sites/goreload ", "\"" + path + "/goreload -n changed\"")
+  err := watchCmd.Run()
+    
 
-    //Ok, so 
     //fswatch ~/Sites/goreload "goreload -n $RANDOM"
     // Watch the change
     // go func() {
